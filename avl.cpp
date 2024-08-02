@@ -179,15 +179,17 @@ void verify(AVLnode *root) {
     verify_inner(root, nullptr, height(root));
 }
 
-void show(AVLnode *root, std::string prefix="") {
+void show(AVLnode *root, std::string rprefix="  ", std::string lprefix="  ", int lr=0) {
     if (root == nullptr) {
-        std::cout << prefix << "nil\n";
+        if (lr == 0) std::cout << "* "; else std::cout << (lr == 1? lprefix : rprefix);
+        std::cout << ".\n";
         return;
     }
-    show(root->right_, prefix + "     ");
+    show(root->right_, rprefix + "   ", rprefix + "  |", 2);
     //std::cout << prefix << "(" << root->K_ << ", " << root->V_ << ") h=" << root->height_ << "\n";
-    std::cout << prefix << root->K_ << " h=" << root->height_ << "\n";
-    show(root->left_, prefix + "     ");
+    if (lr == 0) std::cout << "* "; else std::cout << (lr == 1? lprefix : rprefix);
+    std::cout << root->K_ << " h=" << root->height_ << "\n";
+    show(root->left_,  lprefix + "  |", lprefix + "   ", 1);
 }
 
 int main() {
