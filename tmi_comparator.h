@@ -193,18 +193,155 @@ private:
         return node ? get_parent(node) : nullptr;
     }
 
+    void rotate_right(node_type* v)
+    {
+        /*
+          Rotate v right. Assumes that w exists but A, B, C might all
+          be empty. Inverse of RL on the resulting w'.
+
+              v     RR(v)     w'
+             / \    ====>    / \
+            w   C           A   v'
+           / \      RL(w')     / \
+          A   B     <====     B   C
+
+          NB: It is caller's responsibility to update the balance
+          factors for v' and w'.
+        */
+        node_type* w = get_left(v);
+        assert(w != nullptr);
+        node_type* B = get_right(w);
+
+        // reconstruct the tree. note that A, C are unaffected.
+        w->template set_right<I>(v);
+        v->template set_parent<I>(w);
+
+        v->template set_left<I>(B); // always
+        if (B != nullptr) {
+            B->template set_parent<I>(v);
+        }
+    }
+
+    void rotate_left(node_type* w)
+    {
+        /*
+          Rotate w left. Assumes that v exists but A, B, C might all
+          be empty. Inverse of RR on the resulting v'.
+
+              w       RL(w)      v'
+             / \      ====>     / \
+            A   v              w'  C
+               / \    RR(v')  / \
+              B   C   <====  A   B
+
+          NB: It is caller's responsibility to update the balance
+          factors for v' and w'.
+        */
+        node_type* v = get_right(w);
+        assert(v != nullptr);
+        node_type* B = get_left(v);
+
+        // reconstruct the tree. note that A, C are unaffected.
+        v->template set_left<I>(w);
+        w->template set_parent<I>(v);
+
+        w->template set_right<I>(B); // always
+        if (B != nullptr) {
+            B->template set_parent<I>(w);
+        }
+    }
+
     node_type* tree_remove(node_type* node)
     {
-        //TODO:
+        /* If node to be removed is a leaf, we remove it directly. If
+           node to be removed has one child, we replace it by that
+           child.
+
+           To handle the case when it has both children, we find its
+           sort order predecessor, replace the node by the
+           predecessor, and replace the predecessor by its left child
+           (if any).
+
+           TODO: implement optimization where we choose
+           predecessor/successor based on which of node's subtrees is
+           shallower.
+
+           Handle rebalancing
+         */
         node_type* new_root = nullptr;
         return new_root;
     }
 
     node_type* tree_balance_after_insert(node_type* root, node_type* node)
     {
-        //TODO:
-        node_type* new_root = nullptr;
-        return new_root;
+        bool height_increased = true;
+        while (node != root && height_increased) {
+            /* Loop invariant: the subtree pointed to by `node` has
+               its height increased (compared to the node on the path
+               from insertion point to root that has the same distance
+               to the root as `node`), and because `node != root`
+               there is a potential AVL balance violation on the path
+               to `root` (but not elsewhere). */
+            const node_type* parent = get_parent(node);
+            int parent_bf = get_bf(parent);
+
+            if (node == get_left(parent)) {
+                parent_bf += 1;
+                if (parent_bf == 0) {
+                    /* Parent's balance factor went from -1 to 0, due
+                       to insertion in the left subtree, therefore
+                       parent's height did not increase. We can safely
+                       exit. */
+
+                    // update bf, set node = parent
+                    height_increased = false;
+                } else if (parent_bf == 1) {
+                    /* Parent's balance factor went from 0 (balanced)
+                       to 1 (left subtree, containing newly inserted
+                       element, is now heavier). this means that
+                       parent's height increased but `parent` points
+                       to a valid AVL tree (no rebalancing necessary
+                       at parent). Continue moving up. */
+
+                    // update bf, set node = parent
+                } else {
+                    /* Parent's balance factor went from +1 (balanced,
+                       left is heavy) to +2 (left is heavy by 2).
+
+                       We distinguish two cases depending which of our
+                       children was heavier.
+                    */
+
+                    /*
+                       Case 1: Our left child is heavy (bf(node)=+1)
+
+                          parent       parent
+                            / \          / \
+                          node C   ==>  A node
+                          / \  h       h+1 / \
+                         A   B            B   C
+                        h+1  h            h   h
+                    */
+
+                    /*
+                       Case 2: Our right child is heavy (bf(node)=+1)
+
+                          parent            z
+                            / \            / \
+                          node D   ==> node  parent
+                          / \  h        / \   / \
+                         A   z         A  B  C  D
+                         h   h         h        h
+                            / \
+                           B  C
+
+                        One of B, C is h and the other is either h or h-1.
+                    */
+                }
+            }
+         }
+
+        return node;
     }
 
     void remove_node(node_type* node)
